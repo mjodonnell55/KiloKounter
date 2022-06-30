@@ -1,0 +1,61 @@
+import cv2
+import numpy as np
+import time
+import PoseModel as pm
+
+cap = cv2.VideoCapture(0)
+
+detector = pm.poseDetector()
+count = 0
+dir = 0
+pTime= 0
+
+
+while True:
+    success, img = cap.read()
+    img = cv2.resize(img, (1200, 700))
+    img = detector.findPose(img,False)
+    lmList = detector.findPosition(img, False)
+    #print(lmList)
+    if len(lmList) != 0:
+        #right arm
+        angle = detector.findAngle(img, 12, 14, 16)
+        #left arm
+        angle1 = detector.findAngle(img, 11, 13, 15)
+        per = np.interp(angle,(230, 290), (0,100))
+        per1 = np.interp(angle1,( 60, 90), (0,100))
+        #bar = np.interp(angle, (45, 180), (650,100))
+
+        print(per)
+        #number of curls
+        if (per == 100) & (per1 == 100):
+            if dir == 0:
+                count += 0.5
+                dir = 1
+        if (per == 0) & (per1 == 0):
+            if dir ==1:
+                count+=0.5
+                dir =0
+
+        if ((angle < 310) & (angle1 > 90)) | ((angle > 310) & (angle1 < 90)):
+            cv2.putText(img, str("FAIL"), (345, 100), cv2.FONT_HERSHEY_PLAIN, 5, (0, 0, 255), 10)
+
+
+        print(count)
+
+    #draw bar
+    #cv2.rectangle(img, (600,300), (600, 750), (0,255,0), cv2.FILLED)
+    #cv2.rectangle(img, (600,int(bar)), (500, 750), (0,255,0), cv2.FILLED)
+    #cv2.putText(img, f'{int(per)}%', (600, 200), cv2.FONT_HERSHEY_PLAIN, 5, (255,0,0), 5)
+
+    #rep count
+    cv2.rectangle(img, (300,450), (450, 550), (0,255,0), cv2.FILLED)
+    cv2.putText(img, str(int(count)), (345, 531), cv2.FONT_HERSHEY_PLAIN, 5, (255,0,0), 10)
+   # cv2.putText(img, str(int(count)), (50,100), cv2.FONT_HERSHEY_PLAIN, 5, (255, 0, 0), 5)
+    cTime = time.time()
+    fps = 1/(cTime - pTime)
+    pTime = cTime
+    #cv2.putText(img, str(int(fps)), (50, 100), cv2.FONT_HERSHEY_PLAIN, 5, (255, 0, 0), 5)
+
+    cv2.imshow("Image", img)
+    cv2.waitKey(1)
